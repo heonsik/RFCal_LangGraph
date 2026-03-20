@@ -283,7 +283,15 @@ class RequestPageWidget(QWidget):
                 max_w = w
         combo.view().setMinimumWidth(max_w)
 
+    # 공통 API의 카테고리를 부서에 맞게 치환
+    _CATEGORY_MAP = {
+        "IMEI_WRITE": "RF_CAL",
+        "DEV_IMEI_WRITE": "DEV_RF_CAL",
+    }
+
     def _on_fetch_success(self, requests, total_count):
+        for r in requests:
+            r["category"] = self._CATEGORY_MAP.get(r.get("category", ""), r.get("category", ""))
         self._all_requests = sorted(requests, key=lambda x: x.get("request_date", ""), reverse=True)
         self._update_category_filter()
         self._update_assignee_filter()

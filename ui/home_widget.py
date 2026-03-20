@@ -242,8 +242,8 @@ class HomeWidget(QWidget):
             desc="프로그램 검증부터 발행까지 자동 수행",
             flow_text="의뢰 접수 → 프로그램 제작 → 프로그램 검증 → 발행",
             examples=[
-                '"SM-S947C RKT 발행해줘"',
-                '"SM-S999B 모델캡 만들어줘"',
+                '"RF 프로그램 발행해줘"',
+                '"Cal 테스트 해봐"',
             ],
             hover_color=self.COLORS['accent_purple']
         )
@@ -259,7 +259,7 @@ class HomeWidget(QWidget):
             flow_text="질문 입력 → 즉시 응답",
             examples=[
                 '"SM-A111X 담당자 누구야?"',
-                '"E001 에러코드 조회해줘"',
+                '"불량 조회해줘"',
             ],
             hover_color=self.COLORS['accent_cyan']
         )
