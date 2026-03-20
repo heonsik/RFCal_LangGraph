@@ -1,0 +1,24 @@
+{
+  "dept": "RFCal",
+  "engine_id": "RFCal.langgraph.v1",
+  "type": "langgraph",
+  "entrypoint": "main:create_engine",
+  "version": "0.1.0",
+  "description": "RFCal department LangGraph engine",
+  "ui": {
+    "home_entrypoint": "ui.home_widget:HomeWidget",
+    "tabs": {
+      "request": {
+        "entrypoint": "ui.request_page:create_page",
+        "label": "Request 현황",
+        "label_key": "menu.engine.request"
+      },
+      "remote_pc": {
+        "entrypoint": "ui.pc_status:create_page",
+        "label": "Remote PC 현황",
+        "label_key": "menu.engine.remote_pc"
+      }
+    },
+    "hooks": {}
+  }
+}
