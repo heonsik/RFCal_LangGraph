@@ -9,6 +9,7 @@
     "home_entrypoint": "ui.home_widget:HomeWidget",
     "tabs": {
       "request": {
+        "enabled": false,
         "entrypoint": "ui.request_page:create_page",
         "label": "Request 현황",
         "label_key": "menu.engine.request"
@@ -19,6 +20,12 @@
         "label_key": "menu.engine.remote_pc"
       }
     },
-    "hooks": {}
+    "hooks": {},
+    "dashboard": {
+      "enabled": false,
+      "title": "RFCal 의뢰 현황",
+      "categories": ["RF_CAL", "DEV_RF_CAL"],
+      "empty_message": "RFCal request provider가 아직 등록되지 않았습니다."
+    }
   }
 }
