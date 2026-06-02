@@ -18,7 +18,11 @@ class HomeWidget(QWidget):
 
     # 탭 전환 시그널: tab_name을 emit
     tabChangeRequested = Signal(str)
-    # RFCal 엔진으로 새 채팅 세션 생성 요청
+    # 현재 엔진(RFCal)으로 새 채팅 세션 생성 요청 — dept-neutral 이름.
+    # 근거: docs/engine_app_decoupling_analysis.md §5 우선순위 9.
+    newEngineSessionRequested = Signal()
+    # 호환용 alias: 기존 main_window 슬롯이 newImeiSessionRequested를 받기 때문에
+    # transition 기간 동안 둘 다 emit. (docs/개발체크리스트.md 부록 D)
     newImeiSessionRequested = Signal()
     # DeepAgent(일반 대화) 엔진으로 새 채팅 세션 생성 요청
     newDeepagentSessionRequested = Signal()
@@ -48,6 +52,11 @@ class HomeWidget(QWidget):
         super().__init__(parent)
         self.setObjectName("HomeWidget")
         self._setup_ui()
+
+    def _emit_new_session(self):
+        """현재 엔진 세션 생성 요청 — transition 기간 동안 신/구 signal 모두 emit."""
+        self.newEngineSessionRequested.emit()
+        self.newImeiSessionRequested.emit()
 
     def _setup_ui(self):
         """UI 구성"""
@@ -247,7 +256,7 @@ class HomeWidget(QWidget):
             ],
             hover_color=self.COLORS['accent_purple']
         )
-        task_card.mousePressEvent = lambda e: self.newImeiSessionRequested.emit()
+        task_card.mousePressEvent = lambda e: self._emit_new_session()
         cards_layout.addWidget(task_card, 1)
 
         # QUERY 카드
@@ -263,7 +272,7 @@ class HomeWidget(QWidget):
             ],
             hover_color=self.COLORS['accent_cyan']
         )
-        query_card.mousePressEvent = lambda e: self.newImeiSessionRequested.emit()
+        query_card.mousePressEvent = lambda e: self._emit_new_session()
         cards_layout.addWidget(query_card, 1)
 
         # CHAT 카드
@@ -413,13 +422,6 @@ class HomeWidget(QWidget):
 
         # 기능 카드들
         features = [
-            {
-                'icon': '📊',
-                'color': self.COLORS['accent_purple'],
-                'title': 'TSMS 의뢰 현황',
-                'desc': 'TSMS 의뢰 목록을 조회하고, 발행 요청 상태를 실시간으로 추적합니다.',
-                'tab': 'home'  # Dashboard
-            },
             {
                 'icon': '💬',
                 'color': self.COLORS['accent_pink'],

@@ -45,26 +45,36 @@ class RequestFetchThread(QThread):
         self.days_back = days_back
 
     def run(self):
+        """RFCal 의뢰 목록 조회.
+
+        RFCal 자체 request_provider hook이 등록된 경우에만 조회한다.
+        IMEI provider fallback은 RFCal 독립 실행을 깨므로 사용하지 않는다.
+
+        근거: docs/engine_app_decoupling_analysis.md §5 우선순위 9 — RFCal/SMD 샘플 엔진은
+        request 기능이 아직 구현되지 않은 경우 명시적으로 미지원 메시지를 표시한다.
+        """
         try:
-            from engines.IMEI_LangGraph.tools import fetch_request_list
-            result = fetch_request_list.invoke({
-                "status_filter": self.status_filter,
-                "assignee": self.assignee,
-                "days_back": self.days_back
-            })
-            if hasattr(result, 'ok') and result.ok:
-                requests = result.data.get("requests", []) if result.data else []
-                total_count = result.data.get("total_count", 0) if result.data else 0
-                self.finished_success.emit(requests, total_count)
-            elif hasattr(result, 'ok'):
-                error_text = result.error if hasattr(result, 'error') else "Unknown error"
-                self.finished_error.emit(error_text)
-            elif isinstance(result, dict):
-                requests = result.get("data", {}).get("requests", [])
-                total_count = result.get("data", {}).get("total_count", 0)
-                self.finished_success.emit(requests, total_count)
-            else:
+            from engine.engine_ui_loader import load_engine_hook_module
+            mod = load_engine_hook_module("RFCal", "request_provider")
+            if mod is None or not hasattr(mod, "fetch"):
+                self.finished_error.emit("RFCal request_provider hook not available")
+                return
+
+            result = mod.fetch(
+                status_filter=self.status_filter,
+                assignee=self.assignee,
+                days_back=self.days_back,
+            )
+            if not isinstance(result, dict):
                 self.finished_error.emit("Unknown response format")
+                return
+            if result.get("ok"):
+                self.finished_success.emit(
+                    result.get("requests") or [],
+                    int(result.get("total_count") or 0),
+                )
+            else:
+                self.finished_error.emit(str(result.get("error") or "Unknown error"))
         except Exception as e:
             _console_log(f"RequestFetchThread error: {e}")
             self.finished_error.emit(str(e)[:50])
@@ -114,7 +124,7 @@ class RequestPageWidget(QWidget):
         layout.setSpacing(12)
 
         # 페이지 타이틀
-        title_label = QLabel("TSMS 의뢰 현황")
+        title_label = QLabel("RFCal 의뢰 현황")
         title_label.setStyleSheet("""
             QLabel {
                 font-size: 24px;
@@ -283,15 +293,7 @@ class RequestPageWidget(QWidget):
                 max_w = w
         combo.view().setMinimumWidth(max_w)
 
-    # 공통 API의 카테고리를 부서에 맞게 치환
-    _CATEGORY_MAP = {
-        "IMEI_WRITE": "RF_CAL",
-        "DEV_IMEI_WRITE": "DEV_RF_CAL",
-    }
-
     def _on_fetch_success(self, requests, total_count):
-        for r in requests:
-            r["category"] = self._CATEGORY_MAP.get(r.get("category", ""), r.get("category", ""))
         self._all_requests = sorted(requests, key=lambda x: x.get("request_date", ""), reverse=True)
         self._update_category_filter()
         self._update_assignee_filter()
@@ -479,7 +481,7 @@ def create_page(main_window=None, **kwargs) -> QWidget:
     if main_window is not None:
         def _on_release(model_name, buyer, request_no):
             main_window._set_nav_selection("chat")
-            main_window._create_chat_session(force_imei=True)
+            main_window._create_chat_session(force_dept="RFCal")
             session = main_window._get_selected_session()
             if session:
                 session["is_auto_generated"] = True
